@@ -46,7 +46,7 @@
 			background: #f9f9f9;
 			box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.2);
 			max-height: 400px; /* 限制最大高度 */
-			overflow-y: hidden;
+			overflow-y: auto;
 			transition: max-height 0.3s ease;
 			<button id="toggleTerrorPanel" style="width: 100%; padding: 5px;">显示/隐藏恐怖心</button>
 		}
@@ -104,49 +104,6 @@
 		  background-color: red; /* 红色背景 */
 		  color: white;          /* 白色字体 */
 		}
-		#terrorPanel {
-			position: fixed;
-			top: 50%;
-			left: 0;
-			transform: translateY(-50%);
-			width: 50px; /* 初始宽度（只显示角标） */
-			height: 200px;
-			background-color: #333;
-			transition: width 0.3s ease; /* 平滑动画 */
-			z-index: 1000; /* 确保面板在顶部 */
-		}
-
-		#terrorPanel .terror-button {
-			background-color: #4CAF50;
-			color: white;
-			padding: 10px;
-			border: none;
-			width: 100%;
-			cursor: pointer;
-			text-align: center;
-			font-size: 24px;
-			transition: all 0.3s ease;
-		}
-
-		#terrorPanel .terror-button:focus {
-			outline: none; /* 去掉焦点时的外框 */
-		}
-
-		#terrorSkills {
-			padding: 10px;
-			background-color: #f9f9f9;
-			height: 100%;
-			overflow-y: auto;
-			display: none; /* 初始隐藏技能区域 */
-		}
-
-		#terrorPanel.expanded {
-			width: 300px; /* 展开后的宽度 */
-		}
-
-		#terrorPanel.expanded #terrorSkills {
-			display: block; /* 展开时显示技能区域 */
-		}
     </style>
 </head>
 <body>
@@ -166,15 +123,11 @@
         </tr>
     </table>
 
-	<!-- 恐怖心选择栏 -->
-	<div id="terrorPanel" class="collapsed">
-		<!-- 切换按钮 -->
-		<button class="terror-button" onclick="toggleTerrorPanel()">☰</button>
-		<!-- 技能区域 -->
-		<div id="terrorSkills" class="terror-section">
-			<!-- 这里将自动生成恐怖心技能选项 -->
-		</div>
-	</div>
+    <!-- 恐怖心选择栏 -->
+    <div id="terrorPanel">
+        <h4>恐怖心</h4>
+        <div id="terrorSkills"></div>
+    </div>
 
     <!-- 技能复制栏 -->
     <div id="skillOutput" style="margin: 20px auto; width: 90%; text-align: center; font-family: Arial, sans-serif; font-size: 14px; word-wrap: break-word;">
@@ -229,11 +182,7 @@
             }
             table.appendChild(row);
         }
-		// 切换恐怖心面板的展开和折叠状态
-		function toggleTerrorPanel() {
-			const terrorPanel = document.getElementById("terrorPanel");
-			terrorPanel.classList.toggle("expanded"); // 切换展开/折叠状态
-		}
+
         // 状态记录
         const litSkills = new Set();
         const blackenedColumns = new Set();
