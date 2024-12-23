@@ -100,6 +100,33 @@
 				document.getElementById("terrorPanel").style.maxHeight = "400px"; // 可折叠的默认高度
 			}
 		}
+		.terror-section {
+			border: 1px solid #yyy;
+			padding: 10px;
+			margin: 10px;
+			max-height: 300px; /* 默认最大高度 */
+			overflow-y: auto;
+			background-color: #f9f9f9;
+			transition: max-height 0.3s ease; /* 添加平滑效果 */
+		}
+
+		.terror-section.collapsed {
+			max-height: 150px; /* 折叠后的高度 */
+			overflow: hidden; /* 隐藏多余内容 */
+		}
+
+		.terror-button {
+			background-color: #467500;
+			color: white;
+			padding: 5px 10px;
+			cursor: pointer;
+			border: none;
+			margin-bottom: 10px;
+		}
+
+		.terror-button:active {
+			background-color:#7B7B7B; /* 按下按钮的颜色 */
+		}
 		.highlight {
 		  background-color: red; /* 红色背景 */
 		  color: white;          /* 白色字体 */
@@ -124,10 +151,14 @@
     </table>
 
     <!-- 恐怖心选择栏 -->
-    <div id="terrorPanel">
-        <h4>恐怖心</h4>
-        <div id="terrorSkills"></div>
-    </div>
+	<div id="terrorPanel">
+		<!-- 切换按钮 -->
+		<button class="terror-button" onclick="toggleTerrorPanel()">恐怖心</button>
+		<!-- 技能区域 -->
+		<div id="terrorSkills" class="terror-section collapsed">
+			<!-- 这里将自动生成恐怖心技能选项 -->
+		</div>
+	</div>
 
     <!-- 技能复制栏 -->
     <div id="skillOutput" style="margin: 20px auto; width: 90%; text-align: center; font-family: Arial, sans-serif; font-size: 14px; word-wrap: break-word;">
@@ -146,6 +177,17 @@
         ];
         const table = document.getElementById("skillGrid");
         const terrorPanel = document.getElementById("terrorSkills");
+
+		// 动态生成恐怖心技能选项
+		skills.forEach(([category, skillList]) => {
+			skillList.forEach(skill => {
+				terrorPanel.innerHTML += `
+					<label>
+						<input type="checkbox" data-skill="${skill}"> ${skill}
+					</label><br>
+				`;
+			});
+		});
 
         // 初始化表格和恐怖心选项
         const maxRows = 11;
@@ -167,14 +209,11 @@
                         cell.appendChild(skillName);
                         cell.appendChild(skillValue);
                         cell.className = "skill";
-                       skills.forEach(category => {
-				category[1].forEach(skill => {
-					const label = document.createElement("label");
-					label.innerHTML = `<input type="checkbox" data-skill="${skill}"> ${skill}`;
-					terrorPanel.appendChild(label);
-					terrorPanel.appendChild(document.createElement("br"));
-				});
-			});
+                        terrorPanel.innerHTML += `
+                            <label>
+                                <input type="checkbox" data-skill="${skills[skillIndex][1][i]}"> 
+                                ${skills[skillIndex][1][i]}
+                            </label><br>`;
                     }
                     row.appendChild(cell);
                 } else {
@@ -185,6 +224,12 @@
             }
             table.appendChild(row);
         }
+		
+		// 恐怖心面板折叠/展开切换
+		function toggleTerrorPanel() {
+			const terrorSection = document.getElementById("terrorSkills");
+			terrorSection.classList.toggle("collapsed"); // 切换折叠状态
+		}
 
         // 状态记录
         const litSkills = new Set();
@@ -316,6 +361,7 @@
             document.execCommand("copy");
             alert("技能列表已复制,请把它交给米凯拉吧！^^");
         }
+		
     </script>
 </body>
 </html>
