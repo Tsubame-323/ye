@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>insane技能计算</title>
+    <style>
+        table {
+            border-collapse: collapse;
+            margin: 20px auto;
+            font-family: Arial, sans-serif;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            text-align: center;
+            padding: 4px;
+            width: 90px;
+        }
+        .blank {
+            background-color: #f0f0f0;
+            width: 10px;
+        }
+        .lit {
+            background-color: #FFDC35;
+        }
+        .blackened {
+            background-color: #333;
+            color: #fff;
+        }
+        .terror {
+            background-color: #ADD8E6; /* 蓝色 */
+        }
+        .value {
+            font-size: 13px;
+            color: #555;
+        }
+        #terrorPanel {
+			position: absolute;
+			right: 10px;
+			top: 50px;
+			width: 150px;
+			font-family: Arial, sans-serif;
+			font-size: 14px;
+			padding: 10px;
+			border: 1px solid #ddd;
+			background: #f9f9f9;
+			box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.2);
+			max-height: 400px; /* 限制最大高度 */
+			overflow-y: auto;
+			transition: max-height 0.3s ease;
+		}
+
+		.terror-section {
+			border: 1px solid #ddd;
+			padding: 10px;
+			margin: 10px;
+			max-height: 200px;
+			overflow-y: auto;
+			background-color: #f9f9f9;
+		}
+
+		.terror-section.collapsed {
+			max-height: 50px;
+			overflow: hidden;
+		}
+
+		.terror-button {
+			background-color: #4CAF50;
+			color: white;
+			padding: 5px 10px;
+			cursor: pointer;
+		}
+
+		.terror-button:active {
+			background-color: #45a049;
+		}
+
+		.terror-options {
+			margin-top: 10px;
+		}
+			function toggleTerrorSection() {
+			const terrorSection = document.getElementById("terrorSkills");
+			const tableHeight = document.getElementById("skillGrid").offsetHeight; // 获取表格高度
+			terrorSection.classList.toggle("collapsed");
+			if (!terrorSection.classList.contains("collapsed")) {
+				document.getElementById("terrorPanel").style.maxHeight = tableHeight + "px"; // 设置面板高度与表格一致
+			} else {
+				document.getElementById("terrorPanel").style.maxHeight = "400px"; // 可折叠的默认高度
+			}
+		}
+		.highlight {
+		  background-color: red; /* 红色背景 */
+		  color: white;          /* 白色字体 */
+		}
+    </style>
+</head>
+<body>
+    <table id="skillGrid">
+        <tr>
+            <th>暴力</th>
+            <td class="blank"></td>
+            <th>情动</th>
+            <td class="blank"></td>
+            <th>知觉</th>
+            <td class="blank"></td>
+            <th>技术</th>
+            <td class="blank"></td>
+            <th>知识</th>
+            <td class="blank"></td>
+            <th>怪异</th>
+        </tr>
+    </table>
+
+    <!-- 恐怖心选择栏 -->
+    <div id="terrorPanel">
+        <h4>恐怖心</h4>
+        <div id="terrorSkills"></div>
+    </div>
+
+    <!-- 技能复制栏 -->
+    <div id="skillOutput" style="margin: 20px auto; width: 90%; text-align: center; font-family: Arial, sans-serif; font-size: 14px; word-wrap: break-word;">
+        <textarea id="outputArea" rows="5" style="width: 90%; font-family: Arial, sans-serif; font-size: 14px;" readonly></textarea>
+        <button onclick="copyOutput()" style="margin-top: 10px; padding: 5px 10px; cursor: pointer;">复制技能列表</button>
+    </div>
+
+    <script>
+        const skills = [
+            ["暴力", ["烧却", "拷问", "紧缚", "威胁", "破坏", "殴打", "切断", "穿刺", "射击", "战争", "埋葬"]],
+            ["情动", ["恋爱", "喜悦", "忧郁", "羞耻", "笑", "忍耐", "惊", "怒", "恨", "哀", "爱"]],
+            ["知觉", ["痛觉", "官能", "触觉", "嗅觉", "味觉", "物音", "情景", "追踪", "艺术", "第六感", "阴影"]],
+            ["技术", ["分解", "电子", "整理", "药品", "效率", "媒体", "摄像", "驾驶", "机械", "陷阱", "兵器"]],
+            ["知识", ["物理", "数学", "化学", "生物", "医学", "教养", "人类", "历史", "民俗", "考古", "天文"]],
+            ["怪异", ["时间", "混沌", "深海", "死", "灵魂", "魔术", "暗黑", "终末", "梦", "地底", "宇宙"]]
+        ];
+        const table = document.getElementById("skillGrid");
+        const terrorPanel = document.getElementById("terrorSkills");
+
+        // 初始化表格和恐怖心选项
+        const maxRows = 11;
+        const terrorSet = new Set();
+
+        for (let i = 0; i < maxRows; i++) {
+            const row = document.createElement("tr");
+
+            for (let col = 0; col < skills.length * 2; col++) {
+                if (col % 2 === 0) {
+                    const skillIndex = col / 2;
+                    const cell = document.createElement("td");
+                    if (skills[skillIndex][1][i]) {
+                        const skillName = document.createElement("div");
+                        skillName.textContent = skills[skillIndex][1][i];
+                        const skillValue = document.createElement("div");
+                        skillValue.className = "value";
+                        skillValue.textContent = "<->";
+                        cell.appendChild(skillName);
+                        cell.appendChild(skillValue);
+                        cell.className = "skill";
+                        terrorPanel.innerHTML += `
+                            <label>
+                                <input type="checkbox" data-skill="${skills[skillIndex][1][i]}"> 
+                                ${skills[skillIndex][1][i]}
+                            </label><br>`;
+                    }
+                    row.appendChild(cell);
+                } else {
+                    const blankCell = document.createElement("td");
+                    blankCell.className = "blank";
+                    row.appendChild(blankCell);
+                }
+            }
+            table.appendChild(row);
+        }
+
+        // 状态记录
+        const litSkills = new Set();
+        const blackenedColumns = new Set();
+
+        // 表格点击事件
+        table.addEventListener("click", (e) => {
+			const cell = e.target.closest("td");
+			if (!cell) return;
+
+			// 点亮技能
+			if (cell.classList.contains("skill")) {
+				const skillName = cell.firstChild.textContent;
+				if (cell.classList.contains("lit")) {
+					cell.classList.remove("lit");
+					litSkills.delete(skillName);
+				} else {
+					cell.classList.add("lit");
+					litSkills.add(skillName);
+				}
+			}
+
+			// 涂黑空白列
+			if (cell.classList.contains("blank")) {
+				const colIndex = Array.from(cell.parentElement.children).indexOf(cell);
+				if (cell.classList.contains("blackened")) {
+					cell.classList.remove("blackened");
+					blackenedColumns.delete(colIndex);
+					// 恢复整列取消涂黑
+					const allCellsInCol = document.querySelectorAll(`td:nth-child(${colIndex + 1})`);
+					allCellsInCol.forEach(colCell => {
+						colCell.classList.remove("blackened");
+					});
+				} else {
+					cell.classList.add("blackened");
+					blackenedColumns.add(colIndex);
+					// 涂黑整列
+					const allCellsInCol = document.querySelectorAll(`td:nth-child(${colIndex + 1})`);
+					allCellsInCol.forEach(colCell => {
+						colCell.classList.add("blackened");
+					});
+				}
+			}
+
+    // 更新目标值
+    updateSkillValues();
+});
+
+        // 恐怖心选择事件
+        terrorPanel.addEventListener("change", (e) => {
+            const skill = e.target.dataset.skill;
+            if (e.target.checked) {
+                terrorSet.add(skill);
+            } else {
+                terrorSet.delete(skill);
+            }
+            updateSkillValues();
+            updateSkillOutput();
+        });
+
+        // 更新技能目标值
+		function updateSkillValues() {
+			const skillCells = Array.from(document.querySelectorAll(".skill"));
+			const litSkillCells = Array.from(document.querySelectorAll(".lit"));
+
+			if (litSkillCells.length === 0) {
+				skillCells.forEach(cell => {
+					cell.querySelector(".value").textContent = "<->";
+				});
+				return;
+			}
+
+			skillCells.forEach(cell => {
+				const skillName = cell.firstChild.textContent;
+				const isTerror = terrorSet.has(skillName);
+
+				if (cell.classList.contains("lit")) {
+					cell.querySelector(".value").textContent = isTerror ? 7 : 5;
+					return;
+				}
+
+				const currentRow = cell.parentElement.rowIndex;
+				const currentCol = cell.cellIndex;
+				let minDistance = Infinity;
+
+				litSkillCells.forEach(litCell => {
+					const litRow = litCell.parentElement.rowIndex;
+					const litCol = litCell.cellIndex;
+					let distance = Math.abs(currentRow - litRow) + Math.abs(currentCol - litCol);
+
+					if (currentCol !== litCol) {
+						const step = currentCol < litCol ? 1 : -1;
+						for (let col = currentCol + step; col !== litCol; col += step) {
+							if (blackenedColumns.has(col)) {
+								distance--;
+							}
+						}
+					}
+
+					minDistance = Math.min(minDistance, distance);
+				});
+
+				const finalValue = minDistance + 5 + (isTerror ? 2 : 0);
+				cell.querySelector(".value").textContent = finalValue;
+				cell.classList.toggle("terror", isTerror);
+			});
+
+			updateSkillOutput();  // 这里调用 updateSkillOutput 来刷新输出栏
+		}
+
+			// 更新技能输出
+			function updateSkillOutput() {
+				const skillCells = Array.from(document.querySelectorAll(".skill"));
+				const output = [".st"];
+				skillCells.forEach(cell => {
+					const skillName = cell.firstChild.textContent;
+					const skillValue = cell.querySelector(".value").textContent;
+					if (skillValue !== "<->") {
+						output.push(`${skillName}${skillValue}`);
+					}
+				});
+				document.getElementById("outputArea").value = output.join("");
+			}
+
+        // 复制技能列表
+        function copyOutput() {
+            const outputArea = document.getElementById("outputArea");
+            outputArea.select();
+            document.execCommand("copy");
+            alert("技能列表已复制！");
+        }
+    </script>
+</body>
+</html>
