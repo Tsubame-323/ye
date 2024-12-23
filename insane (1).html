@@ -167,11 +167,14 @@
                         cell.appendChild(skillName);
                         cell.appendChild(skillValue);
                         cell.className = "skill";
-                        terrorPanel.innerHTML += `
-                            <label>
-                                <input type="checkbox" data-skill="${skills[skillIndex][1][i]}"> 
-                                ${skills[skillIndex][1][i]}
-                            </label><br>`;
+                       skills.forEach(category => {
+				category[1].forEach(skill => {
+					const label = document.createElement("label");
+					label.innerHTML = `<input type="checkbox" data-skill="${skill}"> ${skill}`;
+					terrorPanel.appendChild(label);
+					terrorPanel.appendChild(document.createElement("br"));
+				});
+			});
                     }
                     row.appendChild(cell);
                 } else {
