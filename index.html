@@ -13,12 +13,12 @@
         th, td {
             border: 1px solid #ddd;
             text-align: center;
-            padding: 4px;
+            padding: 3px;
             width: 90px;
         }
         .blank {
-            background-color: #f0f0f0;
-            width: 10px;
+            background-color: #f0f0f0;/* 黑色 */
+            width: 5px;/* 黑格子宽度 */
         }
         .lit {
             background-color: #FFDC35;
@@ -31,16 +31,16 @@
             background-color: #ADD8E6; /* 蓝色 */
         }
         .value {
-            font-size: 13px;
+            font-size: 10px;
             color: #555;
         }
         #terrorPanel {
 			position: absolute;
-			right: 10px;
+			right: 50px;
 			top: 50px;
-			width: 150px;
+			width: 120px;
 			font-family: Arial, sans-serif;
-			font-size: 14px;
+			font-size:14px;
 			padding: 10px;
 			border: 1px solid #ddd;
 			background: #f9f9f9;
@@ -48,14 +48,14 @@
 			max-height: 400px; /* 限制最大高度 */
 			overflow-y: auto;
 			transition: max-height 0.3s ease;
-			<button id="toggleTerrorPanel" style="width: 100%; padding: 5px;">显示/隐藏恐怖心</button>
+			<button id="toggleTerrorPanel" style="width: 100%; padding: 6px;">显示/隐藏恐怖心</button>
 		}
 		@media screen and (max-width: 768px) {
 		  #terrorPanel {
 			position: fixed;
-			bottom: 7;
-			right: 0;
-			left: 15;
+			bottom: 5;
+			right: 10;
+			left: 0;
 			max-height: 400px;
 			overflow: hidden;
 			transition: max-height 0.3s ease;
@@ -66,7 +66,7 @@
 			border: 1px solid #ddd;
 			padding: 10px;
 			margin: 10px;
-			max-height: 200px;
+			max-height: 20px;
 			overflow-y: auto;
 			background-color: #f9f9f9;
 		}
@@ -79,7 +79,7 @@
 		.terror-button {
 			background-color: #4CAF50;
 			color: white;
-			padding: 5px 10px;
+			padding: 5px 50px;
 			cursor: pointer;
 		}
 
@@ -97,7 +97,7 @@
 			if (!terrorSection.classList.contains("collapsed")) {
 				document.getElementById("terrorPanel").style.maxHeight = tableHeight + "px"; // 设置面板高度与表格一致
 			} else {
-				document.getElementById("terrorPanel").style.maxHeight = "400px"; // 可折叠的默认高度
+				document.getElementById("terrorPanel").style.maxHeight = "40px"; // 可折叠的默认高度
 			}
 		}
 		.terror-section {
@@ -111,7 +111,7 @@
 		}
 
 		.terror-section.collapsed {
-			max-height: 150px; /* 折叠后的高度 */
+			max-height: 10px; /* 折叠后的高度 */
 			overflow: hidden; /* 隐藏多余内容 */
 		}
 
