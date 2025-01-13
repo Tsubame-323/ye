@@ -53,10 +53,10 @@
 		@media screen and (max-width: 768px) {
 		  #terrorPanel {
 			position: fixed;
-			bottom: 0;
+			bottom: 7;
 			right: 0;
-			left: 0;
-			max-height: 50px;
+			left: 15;
+			max-height: 400px;
 			overflow: hidden;
 			transition: max-height 0.3s ease;
 		  }
@@ -177,17 +177,6 @@
         ];
         const table = document.getElementById("skillGrid");
         const terrorPanel = document.getElementById("terrorSkills");
-
-		// 动态生成恐怖心技能选项
-		skills.forEach(([category, skillList]) => {
-			skillList.forEach(skill => {
-				terrorPanel.innerHTML += `
-					<label>
-						<input type="checkbox" data-skill="${skill}"> ${skill}
-					</label><br>
-				`;
-			});
-		});
 
         // 初始化表格和恐怖心选项
         const maxRows = 11;
