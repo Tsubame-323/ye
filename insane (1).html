@@ -1,356 +1,486 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>insane技能计算</title>
+    <title>insane特技数值快速计算并导入</title>
     <style>
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #3498db;
+            --danger-color: #e74c3c;
+        }
+		button {
+			background: white;
+			border: 1px solid #ddd;
+			border-radius: 6px;
+			padding: 8px 16px;
+			cursor: pointer;
+			box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+			transition: all 0.2s;
+		}
+		
+		button:hover {
+			background: #f8f9fa;
+			transform: translateY(-1px);
+		}
+		
+		button:active {
+			transform: translateY(1px);
+		}
+		
+		.custom-btn {
+			background: white;
+			border: 1px solid #ddd;
+			border-radius: 6px;
+			padding: 8px 15px;
+			cursor: pointer;
+			transition: all 0.2s;
+			box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+			font-size: 14px;
+			color: #333;
+		}
+
+		.custom-btn:hover {
+			background: #f8f9fa;
+			transform: translateY(-1px);
+			box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+		}
+
+		.custom-btn:active {
+			transform: translateY(0);
+			box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+		}
+
+        html, body {
+            margin: 0;
+            padding: 20px 10px;
+            font-family: 'Segoe UI', system-ui;
+            background-color: #f8f9fa;
+        }
+
+        .container {
+            max-width: fit-content;
+            margin: 0 auto;
+        }
+
+        .status-panel {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .status-item {
+            background: white;
+            padding: 8px;
+            border-radius: 6px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            font-size: 14px;
+        }
+
+		.status-item,
+		.action-group,
+		.output-group {
+			background: white;
+			padding: 12px;
+			border-radius: 8px;
+			box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+		}
+		
+        .status-item input {
+            width: 50px;
+            padding: 4px;
+            margin: 0 3px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .skill-table {
+            width: 100%;
+            overflow-x: auto;
+        }
+		.styled-button {
+			background: #f0f3f5;
+			border: 1px solid #d0d7de;
+			color: #24292f;
+			padding: 8px 16px;
+			border-radius: 6px;
+			cursor: pointer;
+			transition: all 0.2s;
+			width: 100%;
+			margin: 5px 0;
+		}
+		
+		.styled-button:hover {
+			background: #e9ecef;
+			border-color: #b6bcc2;
+		}
         table {
             border-collapse: collapse;
-            margin: 20px auto;
-            font-family: Arial, sans-serif;
+            margin: 10px auto;
+            background: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            min-width: 300px;
         }
+
         th, td {
-            border: 1px solid #ddd;
+            padding: 4px 6px;
             text-align: center;
-            padding: 4px;
-            width: 90px;
+            border: 1px solid #ddd;
+            min-width: 70px;
         }
-        .blank {
-            background-color: #f0f0f0;
-            width: 10px;
+
+        th {
+            background-color: var(--primary-color);
+            color: white;
         }
-        .lit {
-            background-color: #FFDC35;
+
+        .skill-cell {
+            cursor: pointer;
+            transition: background-color 0.2s;
         }
+
+        .skill-cell.lit {
+            background-color: #f1c40f;
+        }
+
+        .blank-cell {
+            background-color: #ecf0f1;
+            width: 3px;
+            min-width: 3px;
+            cursor: pointer;
+        }
+
         .blackened {
-            background-color: #333;
-            color: #fff;
+            background-color: var(--primary-color) !important;
+            color: white;
         }
-        .terror {
-            background-color: #ADD8E6; /* 蓝色 */
-        }
-        .value {
-            font-size: 13px;
-            color: #555;
-        }
-        #terrorPanel {
-			position: absolute;
-			right: 10px;
-			top: 50px;
-			width: 150px;
-			font-family: Arial, sans-serif;
-			font-size: 14px;
-			padding: 10px;
+
+		/* 统一输入框和文本域样式 */
+		#outputArea, .status-item input {
+			background: white;
 			border: 1px solid #ddd;
-			background: #f9f9f9;
-			box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.2);
-			max-height: 400px; /* 限制最大高度 */
-			overflow-y: auto;
-			transition: max-height 0.3s ease;
-			<button id="toggleTerrorPanel" style="width: 100%; padding: 5px;">显示/隐藏恐怖心</button>
+			border-radius: 6px;
+			padding: 8px;
+			box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+			font-family: inherit;
 		}
-		@media screen and (max-width: 768px) {
-		  #terrorPanel {
-			position: fixed;
-			bottom: 7;
-			right: 0;
-			left: 15;
-			max-height: 400px;
-			overflow: hidden;
-			transition: max-height 0.3s ease;
-		  }
-		}
+		
+        .terror-panel {
+            position: fixed;
+            right: -320px;
+            top: 0;
+            width: 280px;
+            height: 90vh;
+            background: white;
+            box-shadow: -2px 0 8px rgba(0,0,0,0.1);
+            transition: right 0.3s;
+            padding: 20px;
+            overflow-y: auto;
+			background: rgba(255, 255, 255, 0.05);
+			backdrop-filter: blur(8px);
+			-webkit-backdrop-filter: blur(10px);
+        }
 
-		.terror-section {
-			border: 1px solid #ddd;
-			padding: 10px;
-			margin: 10px;
-			max-height: 200px;
-			overflow-y: auto;
-			background-color: #f9f9f9;
-		}
+        .terror-panel.active {
+            right: 0;
+        }
 
-		.terror-section.collapsed {
-			max-height: 50px;
-			overflow: hidden;
-		}
+        .skill-tag {
+            display: inline-block;
+            padding: 5px 10px;
+            margin: 4px;
+            background: #e8f4ff;
+            border-radius: 15px;
+            cursor: pointer;
+        }
 
-		.terror-button {
-			background-color: #4CAF50;
-			color: white;
-			padding: 5px 10px;
-			cursor: pointer;
-		}
+        .skill-tag.selected {
+            background: var(--accent-color);
+            color: white;
+        }
 
-		.terror-button:active {
-			background-color: #45a049;
-		}
+        .terror-highlight {
+            background-color: var(--accent-color) !important;
+            color: white !important;
+        }
 
-		.terror-options {
-			margin-top: 10px;
+		.status-tip {
+			font-size: 12px;
+			color: #666;
+			margin-bottom: 6px;
+			line-height: 1.4;
+			padding: 4px 8px;
+			background: #f8f9fa;
+			border-radius: 4px;
+			display: inline-block;
+			border: 1px solid #eee;
 		}
-			function toggleTerrorSection() {
-			const terrorSection = document.getElementById("terrorSkills");
-			const tableHeight = document.getElementById("skillGrid").offsetHeight; // 获取表格高度
-			terrorSection.classList.toggle("collapsed");
-			if (!terrorSection.classList.contains("collapsed")) {
-				document.getElementById("terrorPanel").style.maxHeight = tableHeight + "px"; // 设置面板高度与表格一致
-			} else {
-				document.getElementById("terrorPanel").style.maxHeight = "400px"; // 可折叠的默认高度
+		
+        @media (max-width: 768px) {
+		    .status-panel {
+				grid-template-columns: repeat(2, minmax(150px, 1fr)); /* 强制两列布局 */
+				overflow-x: visible; /* 移除滚动条 */
 			}
-		}
-		.terror-section {
-			border: 1px solid #yyy;
-			padding: 10px;
-			margin: 10px;
-			max-height: 300px; /* 默认最大高度 */
-			overflow-y: auto;
-			background-color: #f9f9f9;
-			transition: max-height 0.3s ease; /* 添加平滑效果 */
-		}
-
-		.terror-section.collapsed {
-			max-height: 150px; /* 折叠后的高度 */
-			overflow: hidden; /* 隐藏多余内容 */
-		}
-
-		.terror-button {
-			background-color: #467500;
-			color: white;
-			padding: 5px 10px;
-			cursor: pointer;
-			border: none;
-			margin-bottom: 10px;
-		}
-
-		.terror-button:active {
-			background-color:#7B7B7B; /* 按下按钮的颜色 */
-		}
-		.highlight {
-		  background-color: red; /* 红色背景 */
-		  color: white;          /* 白色字体 */
-		}
+			.status-item {
+				white-space: nowrap; /* 防止文字换行 */
+				min-width: 150px; /* 保证最小宽度 */
+			}
+			.status-item input {
+				width: 25px; /* 缩小输入框 */
+				padding: 3px;
+			}
+            td, th {
+                padding: 3px;
+                font-size: 13px;
+				min-width: 55px; /* 移动端更窄 */
+            }
+			.status-tip {
+				font-size: 11px;
+				margin-bottom: 4px;
+			}
+        }
     </style>
 </head>
 <body>
-    <table id="skillGrid">
-        <tr>
-            <th>暴力</th>
-            <td class="blank"></td>
-            <th>情动</th>
-            <td class="blank"></td>
-            <th>知觉</th>
-            <td class="blank"></td>
-            <th>技术</th>
-            <td class="blank"></td>
-            <th>知识</th>
-            <td class="blank"></td>
-            <th>怪异</th>
-        </tr>
-    </table>
+    <div class="container">
+	<div class="status-tip">每选择怪异领域的一个特技，正气度上限-1</div>
+	<div class="status-tip">导入前请新建角色卡并使用[.st temp insane]修改角色卡模板避免报错</div>
+        <div class="status-panel">
+            <div class="status-item">
+                正气度: <input type="number" id="moraleCurrent" min="0" value="6"> / 
+                <input type="number" id="moraleMax" min="0" value="6">
+            </div>
+            <div class="status-item">
+                生命力: <input type="number" id="生命Current" min="0" value="6"> / 
+                <input type="number" id="生命Max" min="0" value="6">
+            </div>
+        </div>
 
-    <!-- 恐怖心选择栏 -->
-	<div id="terrorPanel">
-		<!-- 切换按钮 -->
-		<button class="terror-button" onclick="toggleTerrorPanel()">恐怖心</button>
-		<!-- 技能区域 -->
-		<div id="terrorSkills" class="terror-section collapsed">
-			<!-- 这里将自动生成恐怖心技能选项 -->
-		</div>
-	</div>
+        <div class="skill-table">
+            <table id="skillGrid"></table>
+        </div>
 
-    <!-- 技能复制栏 -->
-    <div id="skillOutput" style="margin: 20px auto; width: 90%; text-align: center; font-family: Arial, sans-serif; font-size: 14px; word-wrap: break-word;">
-        <textarea id="outputArea" rows="5" style="width: 90%; font-family: Arial, sans-serif; font-size: 14px;" readonly></textarea>
-        <button onclick="copyOutput()" style="margin-top: 10px; padding: 5px 10px; cursor: pointer;">复制技能列表</button>
+        <button class="custom-btn" onclick="toggleTerrorPanel()">恐怖心面板</button>
+        
+        <div class="terror-panel" id="terrorPanel">
+            <h3 style="margin-top:0">选择恐怖心</h3>
+            <div id="terrorSkills"></div>
+        </div>
+
+        <div style="margin-top:15px">
+            <textarea id="outputArea" rows="4" style="width:100%; padding:8px; font-family: monospace"></textarea>
+			<button class="custom-btn" onclick="copyOutput()">复制属性数据</button>
+        </div>
     </div>
 
-    <script>
-        const skills = [
-            ["暴力", ["烧却", "拷问", "紧缚", "威胁", "破坏", "殴打", "切断", "穿刺", "射击", "战争", "埋葬"]],
-            ["情动", ["恋爱", "喜悦", "忧郁", "羞耻", "笑", "忍耐", "惊", "怒", "恨", "哀", "爱"]],
-            ["知觉", ["痛觉", "官能", "触觉", "嗅觉", "味觉", "物音", "情景", "追踪", "艺术", "第六感", "阴影"]],
-            ["技术", ["分解", "电子", "整理", "药品", "效率", "媒体", "摄像", "驾驶", "机械", "陷阱", "兵器"]],
-            ["知识", ["物理", "数学", "化学", "生物", "医学", "教养", "人类", "历史", "民俗", "考古", "天文"]],
-            ["怪异", ["时间", "混沌", "深海", "死", "灵魂", "魔术", "暗黑", "终末", "梦", "地底", "宇宙"]]
-        ];
-        const table = document.getElementById("skillGrid");
-        const terrorPanel = document.getElementById("terrorSkills");
+<script>
+    const state = {
+        litSkills: new Set(),
+        blackenedColumns: new Set(),
+        terrorSkills: new Set(),
+        categoryMap: new Map()
+    };
 
-        // 初始化表格和恐怖心选项
-        const maxRows = 11;
-        const terrorSet = new Set();
+    const SKILLS = [
+        ["暴力", ["烧却", "拷问", "紧缚", "威胁", "破坏", "殴打", "切断", "穿刺", "射击", "战争", "埋葬"]],
+        ["情动", ["恋爱", "喜悦", "忧郁", "羞耻", "笑", "忍耐", "惊", "怒", "恨", "哀", "爱"]],
+        ["知觉", ["痛觉", "官能", "触觉", "嗅觉", "味觉", "物音", "情景", "追踪", "艺术", "第六感", "阴影"]],
+        ["技术", ["分解", "电子", "整理", "药品", "效率", "媒体", "摄像", "驾驶", "机械", "陷阱", "兵器"]],
+        ["知识", ["物理", "数学", "化学", "生物", "医学", "教养", "人类", "历史", "民俗", "考古", "天文"]],
+        ["怪异", ["时间", "混沌", "深海", "死", "灵魂", "魔术", "暗黑", "终末", "梦", "地底", "宇宙"]]
+    ];
 
-        for (let i = 0; i < maxRows; i++) {
-            const row = document.createElement("tr");
+    function initTable() {
+        const table = document.getElementById('skillGrid');
+        let html = '<tr>';
+        
+        SKILLS.forEach(([category], index) => {
+            html += `<th>${category}</th>`;
+            if(index !== SKILLS.length-1) html += '<td class="blank-cell"></td>';
+        });
+        html += '</tr>';
 
-            for (let col = 0; col < skills.length * 2; col++) {
-                if (col % 2 === 0) {
-                    const skillIndex = col / 2;
-                    const cell = document.createElement("td");
-                    if (skills[skillIndex][1][i]) {
-                        const skillName = document.createElement("div");
-                        skillName.textContent = skills[skillIndex][1][i];
-                        const skillValue = document.createElement("div");
-                        skillValue.className = "value";
-                        skillValue.textContent = "<->";
-                        cell.appendChild(skillName);
-                        cell.appendChild(skillValue);
-                        cell.className = "skill";
-                        terrorPanel.innerHTML += `
-                            <label>
-                                <input type="checkbox" data-skill="${skills[skillIndex][1][i]}"> 
-                                ${skills[skillIndex][1][i]}
-                            </label><br>`;
-                    }
-                    row.appendChild(cell);
-                } else {
-                    const blankCell = document.createElement("td");
-                    blankCell.className = "blank";
-                    row.appendChild(blankCell);
-                }
-            }
-            table.appendChild(row);
+        for(let row=0; row<11; row++){
+            html += '<tr>';
+            SKILLS.forEach(([category, skills], colIndex) => {
+                const skill = skills[row];
+                state.categoryMap.set(skill, category);
+                html += `
+                    <td class="skill-cell" data-skill="${skill}">
+                        <div>${skill}</div>
+                        <div class="value">-</div>
+                    </td>
+                    ${colIndex !== SKILLS.length-1 ? '<td class="blank-cell"></td>' : ''}
+                `;
+            });
+            html += '</tr>';
         }
-		
-		// 恐怖心面板折叠/展开切换
-		function toggleTerrorPanel() {
-			const terrorSection = document.getElementById("terrorSkills");
-			terrorSection.classList.toggle("collapsed"); // 切换折叠状态
-		}
+        table.innerHTML = html;
+    }
 
-        // 状态记录
-        const litSkills = new Set();
-        const blackenedColumns = new Set();
+    function initTerrorPanel() {
+        const container = document.getElementById('terrorSkills');
+        SKILLS.forEach(([_, skills]) => {
+            skills.forEach(skill => {
+                const div = document.createElement('div');
+                div.className = 'skill-tag';
+                div.textContent = skill;
+                div.onclick = () => toggleTerrorSkill(skill, div);
+                container.appendChild(div);
+            });
+        });
+    }
 
-        // 表格点击事件
-        table.addEventListener("click", (e) => {
-			const cell = e.target.closest("td");
-			if (!cell) return;
-
-			// 点亮技能
-			if (cell.classList.contains("skill")) {
-				const skillName = cell.firstChild.textContent;
-				if (cell.classList.contains("lit")) {
-					cell.classList.remove("lit");
-					litSkills.delete(skillName);
-				} else {
-					cell.classList.add("lit");
-					litSkills.add(skillName);
-				}
-			}
-
-			// 涂黑空白列
-			if (cell.classList.contains("blank")) {
-				const colIndex = Array.from(cell.parentElement.children).indexOf(cell);
-				if (cell.classList.contains("blackened")) {
-					cell.classList.remove("blackened");
-					blackenedColumns.delete(colIndex);
-					// 恢复整列取消涂黑
-					const allCellsInCol = document.querySelectorAll(`td:nth-child(${colIndex + 1})`);
-					allCellsInCol.forEach(colCell => {
-						colCell.classList.remove("blackened");
-					});
-				} else {
-					cell.classList.add("blackened");
-					blackenedColumns.add(colIndex);
-					// 涂黑整列
-					const allCellsInCol = document.querySelectorAll(`td:nth-child(${colIndex + 1})`);
-					allCellsInCol.forEach(colCell => {
-						colCell.classList.add("blackened");
-					});
-				}
-			}
-
-    // 更新目标值
-    updateSkillValues();
-});
-
-        // 恐怖心选择事件
-        terrorPanel.addEventListener("change", (e) => {
-            const skill = e.target.dataset.skill;
-            if (e.target.checked) {
-                terrorSet.add(skill);
-            } else {
-                terrorSet.delete(skill);
+    function updateSkills() {
+        document.querySelectorAll('.skill-cell').forEach(cell => {
+            const skill = cell.dataset.skill;
+            const valueDiv = cell.querySelector('.value');
+            
+            // 恐怖心高亮
+            cell.classList.toggle('terror-highlight', state.terrorSkills.has(skill));
+            
+            if(state.litSkills.has(skill)) {
+                valueDiv.textContent = state.terrorSkills.has(skill) ? '7' : '5';
+                cell.classList.add('lit');
+                return;
             }
-            updateSkillValues();
-            updateSkillOutput();
+            
+            cell.classList.remove('lit');
+            let minDistance = Infinity;
+            
+            state.litSkills.forEach(litSkill => {
+                const litCell = [...document.querySelectorAll('.skill-cell')]
+                    .find(c => c.dataset.skill === litSkill);
+                if(litCell) {
+                    const distance = calculateDistance(cell, litCell);
+                    minDistance = Math.min(minDistance, distance);
+                }
+            });
+
+            const baseValue = minDistance === Infinity ? '-' : minDistance + 5;
+            valueDiv.textContent = baseValue === '-' ? '-' : 
+                baseValue + (state.terrorSkills.has(skill) ? 2 : 0);
+        });
+		
+        updateMoraleMax();
+        updateOutput();
+
+    }
+
+    function calculateDistance(cellA, cellB) {
+        const rowDiff = Math.abs(cellA.parentElement.rowIndex - cellB.parentElement.rowIndex);
+        const colDiff = Math.abs(cellA.cellIndex - cellB.cellIndex);
+        const blockedCols = [...state.blackenedColumns].filter(col => 
+            Math.min(cellA.cellIndex, cellB.cellIndex) < col && 
+            col < Math.max(cellA.cellIndex, cellB.cellIndex)
+        ).length;
+        return rowDiff + colDiff - blockedCols;
+    }
+
+	function updateMoraleMax() {
+		const maxInput = document.getElementById('moraleMax');
+		const currentInput = document.getElementById('moraleCurrent');
+        
+		// 只统计当前点亮的怪异技能
+		const litWeirdSkills = [...state.litSkills].filter(skill => 
+			state.categoryMap.get(skill) === '怪异'
+		).length;
+
+		// 保证下限为0
+		const newMax = Math.max(6 - litWeirdSkills, 0);
+		
+		// 强制更新最大值
+		maxInput.value = newMax;
+
+		// 同步当前值
+		if(currentInput.value > newMax) {
+			currentInput.value = newMax;
+		}
+		// 添加调试日志（正式版可移除）
+		console.log('当前怪异技能:', litWeirdSkills, '正气度上限:', newMax);
+    }
+
+    function updateOutput() {
+        const output = ['.st'];
+        document.querySelectorAll('.skill-cell').forEach(cell => {
+            const value = cell.querySelector('.value').textContent;
+            if(value !== '-') {
+                output.push(`${cell.dataset.skill}${value}`);
+            }
+        });
+        
+        output.push(
+            `正气度${document.getElementById('moraleCurrent').value}`,
+            `正气度上限${document.getElementById('moraleMax').value}`,
+            `生命${document.getElementById('生命Current').value}`,
+            `生命上限${document.getElementById('生命Max').value}`
+        );
+        
+        document.getElementById('outputArea').value = output.join(' ');
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        initTable();
+        initTerrorPanel();
+        
+        document.getElementById('skillGrid').addEventListener('click', e => {
+			const cell = e.target.closest('td');
+			if(!cell) return;
+
+		 if(cell.classList.contains('skill-cell')) {
+				const skill = cell.dataset.skill;
+				const wasLit = state.litSkills.has(skill);
+				
+				// 更新点亮状态
+				wasLit ? state.litSkills.delete(skill) : state.litSkills.add(skill);
+				
+				// 立即更新分类状态
+				if(state.categoryMap.get(skill) === '怪异') {
+					console.log(`${skill} ${wasLit ? '取消' : '选择'}`);
+				}
+                updateSkills();
+            } 
+            else if(cell.classList.contains('blank-cell')) {
+                const colIndex = cell.cellIndex;
+                const allColCells = document.querySelectorAll(`td:nth-child(${colIndex + 1})`);
+                
+                allColCells.forEach(colCell => {
+                    colCell.classList.toggle('blackened');
+                });
+                
+                state.blackenedColumns.has(colIndex) ? 
+                    state.blackenedColumns.delete(colIndex) : 
+                    state.blackenedColumns.add(colIndex);
+                
+                updateSkills();
+            }
         });
 
-        // 更新技能目标值
-		function updateSkillValues() {
-			const skillCells = Array.from(document.querySelectorAll(".skill"));
-			const litSkillCells = Array.from(document.querySelectorAll(".lit"));
+        ['moraleCurrent', 'moraleMax', '生命Current', '生命Max'].forEach(id => {
+            document.getElementById(id).addEventListener('change', updateOutput);
+        });
+    });
 
-			if (litSkillCells.length === 0) {
-				skillCells.forEach(cell => {
-					cell.querySelector(".value").textContent = "<->";
-				});
-				return;
-			}
+    function toggleTerrorSkill(skill, element) {
+        element.classList.toggle('selected');
+        state.terrorSkills.has(skill) ? 
+            state.terrorSkills.delete(skill) : 
+            state.terrorSkills.add(skill);
+        updateSkills();
+    }
 
-			skillCells.forEach(cell => {
-				const skillName = cell.firstChild.textContent;
-				const isTerror = terrorSet.has(skillName);
+    function toggleTerrorPanel() {
+        document.getElementById('terrorPanel').classList.toggle('active');
+    }
 
-				if (cell.classList.contains("lit")) {
-					cell.querySelector(".value").textContent = isTerror ? 7 : 5;
-					return;
-				}
-
-				const currentRow = cell.parentElement.rowIndex;
-				const currentCol = cell.cellIndex;
-				let minDistance = Infinity;
-
-				litSkillCells.forEach(litCell => {
-					const litRow = litCell.parentElement.rowIndex;
-					const litCol = litCell.cellIndex;
-					let distance = Math.abs(currentRow - litRow) + Math.abs(currentCol - litCol);
-
-					if (currentCol !== litCol) {
-						const step = currentCol < litCol ? 1 : -1;
-						for (let col = currentCol + step; col !== litCol; col += step) {
-							if (blackenedColumns.has(col)) {
-								distance--;
-							}
-						}
-					}
-
-					minDistance = Math.min(minDistance, distance);
-				});
-
-				const finalValue = minDistance + 5 + (isTerror ? 2 : 0);
-				cell.querySelector(".value").textContent = finalValue;
-				cell.classList.toggle("terror", isTerror);
-			});
-
-			updateSkillOutput();  // 这里调用 updateSkillOutput 来刷新输出栏
-		}
-
-			// 更新技能输出
-			function updateSkillOutput() {
-				const skillCells = Array.from(document.querySelectorAll(".skill"));
-				const output = [".st"];
-				skillCells.forEach(cell => {
-					const skillName = cell.firstChild.textContent;
-					const skillValue = cell.querySelector(".value").textContent;
-					if (skillValue !== "<->") {
-						output.push(`${skillName}${skillValue}`);
-					}
-				});
-				document.getElementById("outputArea").value = output.join("");
-			}
-
-        // 复制技能列表
-        function copyOutput() {
-            const outputArea = document.getElementById("outputArea");
-            outputArea.select();
-            document.execCommand("copy");
-            alert("技能列表已复制,请把它交给米凯拉吧！^^");
-        }
-		
-    </script>
+    function copyOutput() {
+        const textarea = document.getElementById('outputArea');
+        textarea.select();
+        document.execCommand('copy');
+        alert('已复制到剪贴板，请粘贴给米凯拉，导入你的信息吧^^');
+    }
+</script>
 </body>
 </html>
