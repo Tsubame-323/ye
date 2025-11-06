@@ -384,9 +384,9 @@
                 }
             });
 
+            // 修改这里：恐怖心不再额外+2，只显示基础值
             const baseValue = minDistance === Infinity ? '-' : minDistance + 5;
-            valueDiv.textContent = baseValue === '-' ? '-' : 
-                baseValue + (state.terrorSkills.has(skill) ? 2 : 0);
+            valueDiv.textContent = baseValue; // 移除了恐怖心的额外加成
         });
 		
         updateMoraleMax();
