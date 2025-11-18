@@ -1819,7 +1819,7 @@
         </div>
         
         <div class="footer">
-            insane特技数值计算器 &copy; 2025
+            insane特技数值计算器 1.0.0-beta &copy; 2025<nav>米凯拉QQ:3694231827
         </div>
     </div>
 
@@ -2483,13 +2483,23 @@
             
             // 5. 特技表 - 修复技能显示问题
             exportHTML += `<div class="export-section-title">特技表</div>`;
-            exportHTML += `<table class="export-skill-table" style="width: 100%; border-collapse: collapse; font-size: 0.8rem;">`;
             
+            const rootStyles = getComputedStyle(document.documentElement);
+            const a4WidthValue = parseInt(rootStyles.getPropertyValue('--a4-width')) || 794;
             const separatorWidth = 16;
-            const skillColumnWidth = `calc((100% - ${(SKILLS.length - 1) * separatorWidth}px) / ${SKILLS.length})`;
+            const baseSkillColumnWidth = Math.floor((a4WidthValue - (SKILLS.length - 1) * separatorWidth) / SKILLS.length);
+            const skillColumnWidths = Array(SKILLS.length).fill(baseSkillColumnWidth);
+            const totalAllocatedWidth = baseSkillColumnWidth * SKILLS.length + separatorWidth * (SKILLS.length - 1);
+            const remainingWidth = a4WidthValue - totalAllocatedWidth;
+            if (remainingWidth !== 0) {
+                skillColumnWidths[skillColumnWidths.length - 1] += remainingWidth;
+            }
+            
+            exportHTML += `<table class="export-skill-table" style="width: ${a4WidthValue}px; table-layout: fixed; border-collapse: collapse; font-size: 0.8rem;">`;
+            
             exportHTML += `<colgroup>`;
             SKILLS.forEach((_, index) => {
-                exportHTML += `<col style="width: ${skillColumnWidth};">`;
+                exportHTML += `<col style="width: ${skillColumnWidths[index]}px;">`;
                 if(index !== SKILLS.length - 1) {
                     exportHTML += `<col style="width: ${separatorWidth}px;">`;
                 }
@@ -2506,7 +2516,7 @@
                     const bgColor = isBlackened ? 
                         (isDarkMode ? '#3498db' : '#2c3e50') : 
                         (isDarkMode ? '#3d3d3d' : '#f5f5f5');
-                    exportHTML += `<td style="background-color: ${bgColor};"></td>`;
+                    exportHTML += `<td style="background-color: ${bgColor}; width: ${separatorWidth}px;"></td>`;
                 }
             });
             exportHTML += '</tr>';
@@ -2552,7 +2562,7 @@
                                 const bgColor = isBlackened ? 
                                     (isDarkMode ? '#3498db' : '#2c3e50') : 
                                     (isDarkMode ? '#3d3d3d' : '#f5f5f5');
-                                return `<td style="background-color: ${bgColor};"></td>`;
+                                return `<td style="background-color: ${bgColor}; width: ${separatorWidth}px;"></td>`;
                             })() 
                             : ''}
                     `;
