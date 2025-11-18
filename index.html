@@ -31,6 +31,8 @@
             --border-radius: 8px;
             --shadow: 0 2px 10px rgba(0,0,0,0.08);
             --transition: all 0.3s ease;
+            --a4-width: 794px;   /* 210mm @96DPI */
+            --a4-height: 1123px; /* 297mm @96DPI */
         }
 
         /* 黑夜模式变量 */
@@ -1026,6 +1028,7 @@
             background: #2d2d2d;
         }
         
+        
         .export-controls {
             position: sticky;
             top: 0;
@@ -1101,8 +1104,8 @@
             padding: 20px;
             background: white;
             color: black;
-            width: 210mm; /* A4宽度 */
-            min-height: 297mm; /* A4高度 */
+            width: var(--a4-width);
+            min-height: var(--a4-height);
             margin: 0 auto;
             box-sizing: border-box;
         }
@@ -1865,7 +1868,8 @@
             terrorSkills: new Set(),
             categoryMap: new Map(),
             skills: [], // 存储自定义技能
-            pendingDeleteRowId: null // 新增：存储待删除的行ID
+            pendingDeleteRowId: null, // 新增：存储待删除的行ID
+            skillRowCounter: 0
         };
 
         // 技能类型选项
@@ -1968,7 +1972,8 @@
         // 添加技能行
         function addSkillRow(name = '', type = '', technique = '', effect = '', source = '') {
             const tbody = document.getElementById('skillsTableBody');
-            const rowId = 'skill-row-' + Date.now();
+            state.skillRowCounter += 1;
+            const rowId = 'skill-row-' + state.skillRowCounter;
             
             const row = document.createElement('tr');
             row.id = rowId;
@@ -2382,6 +2387,7 @@
                 state.blackenedColumns.clear();
                 state.terrorSkills.clear();
                 state.skills = [];
+                state.skillRowCounter = 0;
                 
                 // 重置恐怖心标签
                 document.querySelectorAll('.skill-tag').forEach(tag => {
@@ -2479,6 +2485,17 @@
             exportHTML += `<div class="export-section-title">特技表</div>`;
             exportHTML += `<table class="export-skill-table" style="width: 100%; border-collapse: collapse; font-size: 0.8rem;">`;
             
+            const separatorWidth = 16;
+            const skillColumnWidth = `calc((100% - ${(SKILLS.length - 1) * separatorWidth}px) / ${SKILLS.length})`;
+            exportHTML += `<colgroup>`;
+            SKILLS.forEach((_, index) => {
+                exportHTML += `<col style="width: ${skillColumnWidth};">`;
+                if(index !== SKILLS.length - 1) {
+                    exportHTML += `<col style="width: ${separatorWidth}px;">`;
+                }
+            });
+            exportHTML += `</colgroup>`;
+            
             // 表头
             exportHTML += '<tr>';
             SKILLS.forEach(([category], index) => {
@@ -2489,7 +2506,7 @@
                     const bgColor = isBlackened ? 
                         (isDarkMode ? '#3498db' : '#2c3e50') : 
                         (isDarkMode ? '#3d3d3d' : '#f5f5f5');
-                    exportHTML += `<td style="background-color: ${bgColor}; width: 16px;"></td>`;
+                    exportHTML += `<td style="background-color: ${bgColor};"></td>`;
                 }
             });
             exportHTML += '</tr>';
@@ -2535,7 +2552,7 @@
                                 const bgColor = isBlackened ? 
                                     (isDarkMode ? '#3498db' : '#2c3e50') : 
                                     (isDarkMode ? '#3d3d3d' : '#f5f5f5');
-                                return `<td style="background-color: ${bgColor}; width: 16px;"></td>`;
+                                return `<td style="background-color: ${bgColor};"></td>`;
                             })() 
                             : ''}
                     `;
@@ -2595,16 +2612,33 @@
             // 设置导出内容
             exportCard.innerHTML = exportHTML;
             
+            // 创建一个独立的隐藏容器用于截图，确保不受滚动和布局影响
+            const captureCard = exportCard.cloneNode(true);
+            captureCard.id = 'exportCardCapture';
+            captureCard.style.position = 'fixed';
+            captureCard.style.top = '0';
+            captureCard.style.left = '0';
+            captureCard.style.pointerEvents = 'none';
+            captureCard.style.margin = '0';
+            captureCard.style.transform = 'none';
+            captureCard.style.width = getComputedStyle(exportCard).width;
+            captureCard.style.minHeight = getComputedStyle(exportCard).minHeight;
+            captureCard.style.zIndex = '-1';
+            document.body.appendChild(captureCard);
+            
             // 使用html2canvas生成图片 - 修复导出问题
             setTimeout(() => {
-                html2canvas(exportCard, {
+                html2canvas(captureCard, {
                     scale: 2,
                     useCORS: true,
                     allowTaint: false,
                     backgroundColor: isDarkMode ? '#2d2d2d' : '#ffffff',
                     logging: false,
-                    width: exportCard.scrollWidth,
-                    height: exportCard.scrollHeight,
+                    width: captureCard.scrollWidth,
+                    height: captureCard.scrollHeight,
+                    windowHeight: captureCard.scrollHeight,
+                    scrollX: 0,
+                    scrollY: 0,
                     onclone: function(clonedDoc) {
                         // 确保克隆的文档中表格样式正确
                         const clonedTable = clonedDoc.querySelector('.export-skill-table');
@@ -2614,6 +2648,8 @@
                         }
                     }
                 }).then(canvas => {
+                    document.body.removeChild(captureCard);
+                    
                     // 将canvas添加到导出窗口
                     exportCard.innerHTML = '';
                     exportCard.appendChild(canvas);
@@ -2627,6 +2663,7 @@
                     hint.textContent = '仅作车卡使用。建议反馈请走米凯拉QQ。';
                     exportCard.appendChild(hint);
                 }).catch(err => {
+                    document.body.removeChild(captureCard);
                     console.error('导出图片失败:', err);
                     alert('导出图片失败，请重试');
                 });
