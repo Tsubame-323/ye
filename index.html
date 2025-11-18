@@ -1401,9 +1401,12 @@
             }
 
             /* 技能表格响应式 */
-            .skills-table {
-                display: block;
+            .skills-table-section {
                 overflow-x: auto;
+            }
+            
+            .skills-table {
+                min-width: 700px;
             }
             
             .skill-name-col { width: 20%; }
@@ -1685,16 +1688,16 @@
                 </tr>
                 <tr>
                     <td class="mission-column">
-                        <textarea id="missionText" placeholder="请输入使命内容..." class="form-control" style="height: 120px;"></textarea>
+                        <textarea id="missionText" placeholder="此处填写角色使命" class="form-control" style="height: 120px;"></textarea>
                     </td>
                     <td class="secret-column">
                         <div class="secret-row">
                             <div class="shock-input">
                                 <label>震惊：</label>
-                                <input type="text" id="shockValue" placeholder="xxx" class="form-control">
+                                <input type="text" id="shockValue" placeholder="震惊范围" class="form-control">
                             </div>
                             <div class="secret-content">
-                                <textarea id="secretContent" placeholder="请输入秘密内容..." class="form-control" style="height: 80px;"></textarea>
+                                <textarea id="secretContent" placeholder="此处填写角色秘密" class="form-control" style="height: 80px;"></textarea>
                             </div>
                         </div>
                     </td>
@@ -1711,7 +1714,7 @@
                         <button class="markdown-tab" onclick="switchMarkdownTab('backgroundPreview')">预览</button>
                     </div>
                     <div class="markdown-content active" id="backgroundEdit">
-                        <textarea id="characterBackground" placeholder="支持Markdown语法书写角色背景..." class="form-control" style="height: 120px;"></textarea>
+                        <textarea id="characterBackground" placeholder="支持Markdown语法书写角色背景" class="form-control" style="height: 120px;"></textarea>
                     </div>
                     <div class="markdown-content" id="backgroundPreview">
                         <div class="markdown-preview" id="backgroundPreviewContent"></div>
@@ -1720,7 +1723,7 @@
             </div>
             <div class="notes-section">
                 <label>备注：</label>
-                <textarea id="notesText" placeholder="请输入备注..." class="form-control" style="height: 80px;"></textarea>
+                <textarea id="notesText" placeholder="还有什么需要写下来的吗？" class="form-control" style="height: 80px;"></textarea>
             </div>
         </div>
 
@@ -1735,7 +1738,7 @@
         </div>
         
         <div class="footer">
-            insane特技数值计算器 &copy; 2025
+            insane特技数值计算器 &copy; 2025 米凯拉QQ：3694231827
         </div>
     </div>
 
@@ -1753,10 +1756,10 @@
     <div class="export-window" id="exportWindow">
         <div class="export-content">
             <div class="export-controls">
-                <div class="export-title">导出预览 - 右键保存图片或长按保存</div>
+                <div class="export-title">预览-右键复制或长按保存</div>
                 <div class="export-actions">
-                    <button class="export-btn" onclick="downloadImage()">下载图片</button>
-                    <button class="export-btn export-close" onclick="closeExportWindow()">关闭</button>
+                    <button class="export-btn" onclick="downloadImage()">保存</button>
+                    <button class="export-btn export-close" onclick="closeExportWindow()">×</button>
                 </div>
             </div>
             <div class="export-card" id="exportCard">
@@ -1899,7 +1902,7 @@
                     <div class="skill-source">${source}</div>
                 </td>
                 <td class="skill-action-col">
-                    <button class="btn-remove" onclick="removeSkillRow('${rowId}')">-</button>
+                    <button class="btn-remove" oncontextmenu="removeSkillRow('${rowId}'); return false;" ontouchstart="startLongPress('${rowId}')" ontouchend="clearLongPress()">-</button>
                 </td>
             `;
             
@@ -1914,6 +1917,22 @@
                 effect: effect,
                 source: source
             });
+        }
+
+        // 长按删除功能
+        let longPressTimer;
+        
+        function startLongPress(rowId) {
+            longPressTimer = setTimeout(() => {
+                removeSkillRow(rowId);
+            }, 1000); // 长按1秒触发删除
+        }
+        
+        function clearLongPress() {
+            if (longPressTimer) {
+                clearTimeout(longPressTimer);
+                longPressTimer = null;
+            }
         }
 
         // 处理技能名称输入
@@ -2343,7 +2362,7 @@
             // 表头
             exportHTML += '<tr>';
             SKILLS.forEach(([category], index) => {
-                exportHTML += `<th style="background-color: ${isDarkMode ? '#3498db' : '#2c3e50'}; color: white; padding: 8px 4px; font-weight: 600; text-align: center;">${category}</th>`;
+                exportHTML += `<th style="background-color: ${isDarkMode ? '#3498db' : '#2c3e50'}; color: white; padding: 8px 4px; font-weight: 600; text-align: center; width: ${100 / SKILLS.length}%;">${category}</th>`;
                 if(index !== SKILLS.length-1) {
                     const isBlackened = state.blackenedColumns.has(index * 2 + 1);
                     const bgColor = isBlackened ? (isDarkMode ? '#3498db' : '#2c3e50') : (isDarkMode ? '#3d3d3d' : '#f5f5f5');
@@ -2361,7 +2380,7 @@
                     const isTerror = state.terrorSkills.has(skill);
                     
                     // 计算单元格样式
-                    let cellStyle = 'padding: 6px 4px; text-align: center; border: 1px solid ' + (isDarkMode ? '#444' : '#eaeaea') + ';';
+                    let cellStyle = 'padding: 6px 4px; text-align: center; border: 1px solid ' + (isDarkMode ? '#444' : '#eaeaea') + '; width: ' + (100 / SKILLS.length) + '%;';
                     
                     if (isLit && isTerror) {
                         cellStyle += 'background-color: ' + (isDarkMode ? '#1d6fa5' : '#3498db') + '; color: white; font-weight: bold;';
@@ -2399,13 +2418,17 @@
             }
             exportHTML += `</table>`;
             
-            // 6. 技能
+            // 6. 技能 - 优化显示效果和出处
             const customSkills = state.skills.filter(skill => skill.name || skill.type || skill.technique);
             if (customSkills.length > 0) {
                 exportHTML += `<div class="export-section-title ${darkModeClass}">技能</div>`;
                 exportHTML += `<div class="export-skills-list">`;
                 customSkills.forEach(skill => {
-                    exportHTML += `<div class="export-skill-item ${darkModeClass}"><strong>${skill.name}</strong> [${skill.type}] - ${skill.technique}</div>`;
+                    exportHTML += `<div class="export-skill-item ${darkModeClass}">
+                        <div><strong>${skill.name}</strong> [${skill.type}] - ${skill.technique}</div>
+                        ${skill.effect ? `<div style="font-size: 0.75rem; margin-top: 4px;">效果：${skill.effect}</div>` : ''}
+                        ${skill.source ? `<div style="font-size: 0.7rem; color: ${isDarkMode ? '#aaa' : '#666'}; margin-top: 2px;">出处：${skill.source}</div>` : ''}
+                    </div>`;
                 });
                 exportHTML += `</div>`;
             }
@@ -2473,7 +2496,7 @@
                     hint.style.textAlign = 'center';
                     hint.style.fontSize = '0.9rem';
                     hint.style.color = isDarkMode ? '#e0e0e0' : '#666';
-                    hint.textContent = '电脑端：右键图片选择"另存为"；手机端：长按图片保存';
+                    hint.textContent = '仅作车卡使用。建议反馈请走米凯拉QQ。';
                     exportCard.appendChild(hint);
                 }).catch(err => {
                     console.error('导出图片失败:', err);
