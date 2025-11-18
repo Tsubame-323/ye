@@ -617,19 +617,11 @@
             border-bottom-color: #444;
         }
 
-        /* 技能表格响应式优化 */
-        .skills-table-section {
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-            margin-bottom: 15px;
-        }
-
         .skills-table {
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 10px;
             font-size: 0.8rem;
-            min-width: 700px;
         }
 
         .skills-table th {
@@ -1410,71 +1402,20 @@
 
             /* 技能表格响应式 */
             .skills-table {
-                min-width: 750px;
+                display: block;
+                overflow-x: auto;
             }
             
-            .skill-name-col { width: 18%; }
-            .skill-type-col { width: 10%; }
-            .skill-tech-col { width: 15%; }
-            .skill-effect-col { width: 40%; }
-            .skill-source-col { width: 12%; }
+            .skill-name-col { width: 20%; }
+            .skill-type-col { width: 15%; }
+            .skill-tech-col { width: 20%; }
+            .skill-effect-col { width: 30%; }
+            .skill-source-col { width: 10%; }
             .skill-action-col { width: 5%; }
             
             .skills-table th, .skills-table td,
             .pc-table th, .pc-table td {
                 padding: 6px 4px;
-            }
-            
-            /* 允许单元格内容换行 */
-            .skills-table td {
-                word-wrap: break-word;
-                word-break: break-word;
-                white-space: normal;
-                line-height: 1.3;
-            }
-            
-            .skill-effect, .skill-source {
-                max-height: none;
-                overflow: visible;
-                font-size: 0.75rem;
-                line-height: 1.2;
-            }
-            
-            /* 移动端删除按钮优化 */
-            .btn-remove {
-                opacity: 0.3;
-                transition: opacity 0.3s ease;
-            }
-            
-            .btn-remove:hover {
-                opacity: 1;
-            }
-            
-            /* 长按提示 */
-            .skill-action-col {
-                position: relative;
-            }
-            
-            .skill-action-col::after {
-                content: "长按删除";
-                position: absolute;
-                top: -25px;
-                left: 50%;
-                transform: translateX(-50%);
-                background: rgba(0,0,0,0.8);
-                color: white;
-                padding: 4px 8px;
-                border-radius: 4px;
-                font-size: 0.7rem;
-                white-space: nowrap;
-                opacity: 0;
-                transition: opacity 0.3s ease;
-                pointer-events: none;
-                z-index: 10;
-            }
-            
-            .skill-action-col.show-hint::after {
-                opacity: 1;
             }
             
             .form-control {
@@ -1545,25 +1486,15 @@
             }
             
             .skills-table {
-                min-width: 700px;
-                font-size: 0.75rem;
-            }
-            
-            .skill-name-col { width: 20%; }
-            .skill-type-col { width: 12%; }
-            .skill-tech-col { width: 18%; }
-            .skill-effect-col { width: 35%; }
-            .skill-source-col { width: 10%; }
-            .skill-action-col { width: 5%; }
-
-            .skills-table th, 
-            .skills-table td {
-                padding: 5px 3px;
-            }
-            
-            .skill-effect {
                 font-size: 0.7rem;
             }
+            
+            .skill-name-col { width: 25%; }
+            .skill-type-col { width: 15%; }
+            .skill-tech-col { width: 25%; }
+            .skill-effect-col { width: 20%; }
+            .skill-source-col { width: 10%; }
+            .skill-action-col { width: 5%; }
 
             .skill-controls {
                 justify-content: center;
@@ -1672,7 +1603,7 @@
         </div>
         
         <div class="output-section">
-            <h3>属性导出</h3>
+            <h3>输出结果</h3>
             <textarea id="outputArea" rows="4" placeholder="计算结果将显示在这里..." class="form-control"></textarea>
             <button class="btn btn-primary" onclick="copyOutput()">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
@@ -2089,51 +2020,6 @@
             }
         }
 
-        // 添加长按删除功能
-        function initLongPressDelete() {
-            let pressTimer;
-            
-            document.addEventListener('touchstart', function(e) {
-                const removeBtn = e.target.closest('.btn-remove');
-                if (removeBtn) {
-                    const actionCell = removeBtn.closest('.skill-action-col');
-                    pressTimer = setTimeout(() => {
-                        // 显示提示
-                        actionCell.classList.add('show-hint');
-                        
-                        // 确认删除
-                        if (confirm('确定要删除这个技能吗？')) {
-                            const row = removeBtn.closest('tr');
-                            const rowId = row.id;
-                            removeSkillRow(rowId);
-                        }
-                        
-                        // 隐藏提示
-                        setTimeout(() => {
-                            actionCell.classList.remove('show-hint');
-                        }, 1000);
-                        
-                    }, 800); // 长按0.8秒触发
-                }
-            });
-            
-            document.addEventListener('touchend', function() {
-                clearTimeout(pressTimer);
-                // 隐藏所有提示
-                document.querySelectorAll('.skill-action-col').forEach(cell => {
-                    cell.classList.remove('show-hint');
-                });
-            });
-            
-            document.addEventListener('touchmove', function() {
-                clearTimeout(pressTimer);
-                // 隐藏所有提示
-                document.querySelectorAll('.skill-action-col').forEach(cell => {
-                    cell.classList.remove('show-hint');
-                });
-            });
-        }
-
         // Markdown标签切换
         function switchMarkdownTab(tabName) {
             // 更新标签状态
@@ -2513,28 +2399,13 @@
             }
             exportHTML += `</table>`;
             
-            // 6. 技能 - 显示效果和出处
+            // 6. 技能
             const customSkills = state.skills.filter(skill => skill.name || skill.type || skill.technique);
             if (customSkills.length > 0) {
                 exportHTML += `<div class="export-section-title ${darkModeClass}">技能</div>`;
                 exportHTML += `<div class="export-skills-list">`;
                 customSkills.forEach(skill => {
-                    exportHTML += `
-                        <div class="export-skill-item ${darkModeClass}" style="margin-bottom: 15px; padding-bottom: 12px; border-bottom: 1px dashed ${isDarkMode ? '#444' : '#eee'}">
-                            <div style="margin-bottom: 6px;">
-                                <strong style="font-size: 1rem; color: ${isDarkMode ? '#e0e0e0' : '#333'}">${skill.name || '未命名技能'}</strong> 
-                                <span style="color: ${isDarkMode ? '#aaa' : '#666'}; font-size: 0.9rem; margin-left: 8px;">[${skill.type || '未指定'}] - ${skill.technique || '未指定'}</span>
-                            </div>`;
-                    
-                    if (skill.effect) {
-                        exportHTML += `<div style="font-size: 0.85rem; margin-bottom: 6px; color: ${isDarkMode ? '#ccc' : '#555'; line-height: 1.4}"><strong style="color: ${isDarkMode ? '#e0e0e0' : '#333'}">效果：</strong>${skill.effect}</div>`;
-                    }
-                    
-                    if (skill.source) {
-                        exportHTML += `<div style="font-size: 0.8rem; color: ${isDarkMode ? '#999' : '#777'; line-height: 1.3}"><strong style="color: ${isDarkMode ? '#e0e0e0' : '#333'}">出处：</strong>${skill.source}</div>`;
-                    }
-                    
-                    exportHTML += `</div>`;
+                    exportHTML += `<div class="export-skill-item ${darkModeClass}"><strong>${skill.name}</strong> [${skill.type}] - ${skill.technique}</div>`;
                 });
                 exportHTML += `</div>`;
             }
@@ -2675,9 +2546,6 @@
             initTable();
             initSkillsTable();
             initTerrorPanel();
-            
-            // 初始化长按删除功能
-            initLongPressDelete();
             
             // 修复黑夜模式事件监听
             document.getElementById('themeToggle').addEventListener('click', toggleDarkMode);
