@@ -1101,8 +1101,10 @@
             padding: 20px;
             background: white;
             color: black;
-            max-width: 800px;
+            width: 210mm; /* A4宽度 */
+            min-height: 297mm; /* A4高度 */
             margin: 0 auto;
+            box-sizing: border-box;
         }
         
         .dark-mode .export-card {
@@ -1288,6 +1290,82 @@
         
         .dark-mode .export-pc-section h4 {
             color: #3498db;
+        }
+
+        /* 新增：删除确认弹窗样式 */
+        .delete-confirm-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .delete-confirm-modal.active {
+            display: flex;
+        }
+        
+        .delete-confirm-content {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            text-align: center;
+            max-width: 300px;
+            width: 90%;
+        }
+        
+        .delete-confirm-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 15px;
+        }
+        
+        .delete-confirm-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: var(--transition);
+        }
+        
+        .delete-confirm-yes {
+            background: var(--danger-color);
+            color: white;
+        }
+        
+        .delete-confirm-no {
+            background: var(--accent-color);
+            color: white;
+        }
+        
+        .delete-confirm-btn:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+        }
+        
+        /* 长按提示样式 */
+        .long-press-hint {
+            font-size: 0.75rem;
+            color: #666;
+            text-align: center;
+            margin-top: 10px;
+            padding: 5px;
+            background-color: rgba(52, 152, 219, 0.1);
+            border-radius: 4px;
+            border-left: 2px solid var(--accent-color);
+        }
+
+        .dark-mode .long-press-hint {
+            color: #aaa;
+            background-color: rgba(52, 152, 219, 0.2);
         }
 
         /* 响应式设计 */
@@ -1661,13 +1739,13 @@
                         <th class="skill-tech-col">指定特技</th>
                         <th class="skill-effect-col">效果</th>
                         <th class="skill-source-col">出处</th>
-                        <th class="skill-action-col">操作</th>
                     </tr>
                 </thead>
                 <tbody id="skillsTableBody">
                     <!-- 技能行将通过JavaScript动态生成 -->
                 </tbody>
             </table>
+            <div class="long-press-hint">长按/右键技能行可删除</div>
             <div class="skill-controls">
                 <button class="btn-add" onclick="addSkillRow()">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
@@ -1714,7 +1792,7 @@
                         <button class="markdown-tab" onclick="switchMarkdownTab('backgroundPreview')">预览</button>
                     </div>
                     <div class="markdown-content active" id="backgroundEdit">
-                        <textarea id="characterBackground" placeholder="支持Markdown语法书写角色背景" class="form-control" style="height: 120px;"></textarea>
+                        <textarea id="characterBackground" placeholder="支持Markdown语法书写角色背景……" class="form-control" style="height: 120px;"></textarea>
                     </div>
                     <div class="markdown-content" id="backgroundPreview">
                         <div class="markdown-preview" id="backgroundPreviewContent"></div>
@@ -1723,7 +1801,7 @@
             </div>
             <div class="notes-section">
                 <label>备注：</label>
-                <textarea id="notesText" placeholder="还有什么需要写下来的吗？" class="form-control" style="height: 80px;"></textarea>
+                <textarea id="notesText" placeholder="请输入备注……" class="form-control" style="height: 80px;"></textarea>
             </div>
         </div>
 
@@ -1738,7 +1816,7 @@
         </div>
         
         <div class="footer">
-            insane特技数值计算器 &copy; 2025 米凯拉QQ：3694231827
+            insane特技数值计算器 &copy; 2025
         </div>
     </div>
 
@@ -1768,13 +1846,26 @@
         </div>
     </div>
 
+    <!-- 新增：删除确认弹窗 -->
+    <div class="delete-confirm-modal" id="deleteConfirmModal">
+        <div class="delete-confirm-content">
+            <h4>确认删除</h4>
+            <p>确定要删除这个技能吗？</p>
+            <div class="delete-confirm-buttons">
+                <button class="delete-confirm-btn delete-confirm-yes" id="confirmDeleteYes">确认删除</button>
+                <button class="delete-confirm-btn delete-confirm-no" id="confirmDeleteNo">取消</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const state = {
             litSkills: new Set(),
             blackenedColumns: new Set(),
             terrorSkills: new Set(),
             categoryMap: new Map(),
-            skills: [] // 存储自定义技能
+            skills: [], // 存储自定义技能
+            pendingDeleteRowId: null // 新增：存储待删除的行ID
         };
 
         // 技能类型选项
@@ -1901,9 +1992,6 @@
                 <td class="skill-source-col">
                     <div class="skill-source">${source}</div>
                 </td>
-                <td class="skill-action-col">
-                    <button class="btn-remove" oncontextmenu="removeSkillRow('${rowId}'); return false;" ontouchstart="startLongPress('${rowId}')" ontouchend="clearLongPress()">-</button>
-                </td>
             `;
             
             tbody.appendChild(row);
@@ -1917,22 +2005,65 @@
                 effect: effect,
                 source: source
             });
+            
+            // 添加右键和长按删除事件
+            setupRowDeletion(row, rowId);
         }
 
-        // 长按删除功能
-        let longPressTimer;
-        
-        function startLongPress(rowId) {
-            longPressTimer = setTimeout(() => {
-                removeSkillRow(rowId);
-            }, 1000); // 长按1秒触发删除
+        // 修改：设置行删除功能 - 改为长按弹出确认
+        function setupRowDeletion(row, rowId) {
+            let longPressTimer;
+            
+            // 长按触发删除确认（移动端）
+            row.addEventListener('touchstart', function(e) {
+                longPressTimer = setTimeout(() => {
+                    showDeleteConfirm(rowId);
+                }, 800); // 长按0.8秒触发删除确认
+            });
+            
+            row.addEventListener('touchend', function(e) {
+                if (longPressTimer) {
+                    clearTimeout(longPressTimer);
+                    longPressTimer = null;
+                }
+            });
+            
+            row.addEventListener('touchmove', function(e) {
+                if (longPressTimer) {
+                    clearTimeout(longPressTimer);
+                    longPressTimer = null;
+                }
+            });
+            
+            // 右键触发删除确认（桌面端）
+            row.addEventListener('contextmenu', function(e) {
+                e.preventDefault();
+                showDeleteConfirm(rowId);
+                return false;
+            });
         }
-        
-        function clearLongPress() {
-            if (longPressTimer) {
-                clearTimeout(longPressTimer);
-                longPressTimer = null;
+
+        // 新增：显示删除确认弹窗
+        function showDeleteConfirm(rowId) {
+            state.pendingDeleteRowId = rowId;
+            document.getElementById('deleteConfirmModal').classList.add('active');
+        }
+
+        // 新增：隐藏删除确认弹窗
+        function hideDeleteConfirm() {
+            document.getElementById('deleteConfirmModal').classList.remove('active');
+            state.pendingDeleteRowId = null;
+        }
+
+        // 修改：删除技能行
+        function removeSkillRow(rowId) {
+            const row = document.getElementById(rowId);
+            if (row) {
+                row.remove();
+                // 从状态中移除
+                state.skills = state.skills.filter(skill => skill.id !== rowId);
             }
+            hideDeleteConfirm();
         }
 
         // 处理技能名称输入
@@ -2026,16 +2157,6 @@
                 state.skills[skillIndex].technique = technique;
                 state.skills[skillIndex].effect = effect;
                 state.skills[skillIndex].source = source;
-            }
-        }
-
-        // 删除技能行
-        function removeSkillRow(rowId) {
-            const row = document.getElementById(rowId);
-            if (row) {
-                row.remove();
-                // 从状态中移除
-                state.skills = state.skills.filter(skill => skill.id !== rowId);
             }
         }
 
@@ -2303,7 +2424,7 @@
             }
         }
 
-        // 导出为图片功能 - 修复版
+        // 修复：导出为图片功能
         function exportAsImage() {
             // 显示导出窗口
             const exportWindow = document.getElementById('exportWindow');
@@ -2312,7 +2433,7 @@
             // 创建导出内容
             const exportCard = document.getElementById('exportCard');
             
-            // 构建导出内容
+            // 构建导出内容 - 先构建完整的HTML
             let exportHTML = '';
             
             // 获取角色信息
@@ -2324,48 +2445,50 @@
             
             // 检查是否为黑夜模式
             const isDarkMode = document.body.classList.contains('dark-mode');
-            const darkModeClass = isDarkMode ? 'dark-mode' : '';
             
             // 1. 角色姓名作为开头
-            exportHTML += `<div class="export-character-name ${darkModeClass}">${characterName}</div>`;
+            exportHTML += `<div class="export-character-name">${characterName}</div>`;
             
             // 2. 角色信息
             if (playerName || characterAge || characterGender || characterOccupation) {
-                exportHTML += `<div class="export-section-title ${darkModeClass}">角色信息</div>`;
+                exportHTML += `<div class="export-section-title">角色信息</div>`;
                 exportHTML += `<div class="export-stats-grid">`;
-                if (playerName) exportHTML += `<div class="export-stat-item ${darkModeClass}"><span class="export-stat-label ${darkModeClass}">玩家名</span><span class="export-stat-value">${playerName}</span></div>`;
-                if (characterAge) exportHTML += `<div class="export-stat-item ${darkModeClass}"><span class="export-stat-label ${darkModeClass}">年龄</span><span class="export-stat-value">${characterAge}</span></div>`;
-                if (characterGender) exportHTML += `<div class="export-stat-item ${darkModeClass}"><span class="export-stat-label ${darkModeClass}">性别</span><span class="export-stat-value">${characterGender}</span></div>`;
-                if (characterOccupation) exportHTML += `<div class="export-stat-item ${darkModeClass}"><span class="export-stat-label ${darkModeClass}">职业</span><span class="export-stat-value">${characterOccupation}</span></div>`;
+                if (playerName) exportHTML += `<div class="export-stat-item"><span class="export-stat-label">玩家名</span><span class="export-stat-value">${playerName}</span></div>`;
+                if (characterAge) exportHTML += `<div class="export-stat-item"><span class="export-stat-label">年龄</span><span class="export-stat-value">${characterAge}</span></div>`;
+                if (characterGender) exportHTML += `<div class="export-stat-item"><span class="export-stat-label">性别</span><span class="export-stat-value">${characterGender}</span></div>`;
+                if (characterOccupation) exportHTML += `<div class="export-stat-item"><span class="export-stat-label">职业</span><span class="export-stat-value">${characterOccupation}</span></div>`;
                 exportHTML += `</div>`;
             }
             
             // 3. 属性
-            exportHTML += `<div class="export-section-title ${darkModeClass}">属性</div>`;
+            exportHTML += `<div class="export-section-title">属性</div>`;
             exportHTML += `<div class="export-stats-grid">`;
-            exportHTML += `<div class="export-stat-item ${darkModeClass}"><span class="export-stat-label ${darkModeClass}">生命力</span><span class="export-stat-value">${document.getElementById('生命Current').value}/${document.getElementById('生命Max').value}</span></div>`;
-            exportHTML += `<div class="export-stat-item ${darkModeClass}"><span class="export-stat-label ${darkModeClass}">正气度</span><span class="export-stat-value">${document.getElementById('moraleCurrent').value}/${document.getElementById('moraleMax').value}</span></div>`;
+            exportHTML += `<div class="export-stat-item"><span class="export-stat-label">生命力</span><span class="export-stat-value">${document.getElementById('生命Current').value}/${document.getElementById('生命Max').value}</span></div>`;
+            exportHTML += `<div class="export-stat-item"><span class="export-stat-label">正气度</span><span class="export-stat-value">${document.getElementById('moraleCurrent').value}/${document.getElementById('moraleMax').value}</span></div>`;
             exportHTML += `</div>`;
             
             // 4. 道具
-            exportHTML += `<div class="export-section-title ${darkModeClass}">道具</div>`;
+            exportHTML += `<div class="export-section-title">道具</div>`;
             exportHTML += `<div class="export-items-grid">`;
-            exportHTML += `<div class="export-item ${darkModeClass}"><strong>护身符</strong><br>${document.getElementById('amuletCount').value}个</div>`;
-            exportHTML += `<div class="export-item ${darkModeClass}"><strong>镇静剂</strong><br>${document.getElementById('sedativeCount').value}个</div>`;
-            exportHTML += `<div class="export-item ${darkModeClass}"><strong>武器</strong><br>${document.getElementById('weaponCount').value}个</span></div>`;
+            exportHTML += `<div class="export-item"><strong>护身符</strong><br>${document.getElementById('amuletCount').value}个</div>`;
+            exportHTML += `<div class="export-item"><strong>镇静剂</strong><br>${document.getElementById('sedativeCount').value}个</div>`;
+            exportHTML += `<div class="export-item"><strong>武器</strong><br>${document.getElementById('weaponCount').value}个</span></div>`;
             exportHTML += `</div>`;
             
             // 5. 特技表 - 修复技能显示问题
-            exportHTML += `<div class="export-section-title ${darkModeClass}">特技表</div>`;
-            exportHTML += `<table class="export-skill-table ${darkModeClass}" style="width: 100%; border-collapse: collapse; font-size: 0.8rem;">`;
+            exportHTML += `<div class="export-section-title">特技表</div>`;
+            exportHTML += `<table class="export-skill-table" style="width: 100%; border-collapse: collapse; font-size: 0.8rem;">`;
             
             // 表头
             exportHTML += '<tr>';
             SKILLS.forEach(([category], index) => {
-                exportHTML += `<th style="background-color: ${isDarkMode ? '#3498db' : '#2c3e50'}; color: white; padding: 8px 4px; font-weight: 600; text-align: center; width: ${100 / SKILLS.length}%;">${category}</th>`;
+                exportHTML += `<th style="background-color: ${isDarkMode ? '#3498db' : '#2c3e50'}; color: white; padding: 8px 4px; font-weight: 600; text-align: center;">${category}</th>`;
                 if(index !== SKILLS.length-1) {
                     const isBlackened = state.blackenedColumns.has(index * 2 + 1);
-                    const bgColor = isBlackened ? (isDarkMode ? '#3498db' : '#2c3e50') : (isDarkMode ? '#3d3d3d' : '#f5f5f5');
+                    // 修复：根据黑夜模式设置空白格颜色
+                    const bgColor = isBlackened ? 
+                        (isDarkMode ? '#3498db' : '#2c3e50') : 
+                        (isDarkMode ? '#3d3d3d' : '#f5f5f5');
                     exportHTML += `<td style="background-color: ${bgColor}; width: 16px;"></td>`;
                 }
             });
@@ -2380,14 +2503,14 @@
                     const isTerror = state.terrorSkills.has(skill);
                     
                     // 计算单元格样式
-                    let cellStyle = 'padding: 6px 4px; text-align: center; border: 1px solid ' + (isDarkMode ? '#444' : '#eaeaea') + '; width: ' + (100 / SKILLS.length) + '%;';
+                    let cellStyle = `padding: 6px 4px; text-align: center; border: 1px solid ${isDarkMode ? '#444' : '#eaeaea'};`;
                     
                     if (isLit && isTerror) {
-                        cellStyle += 'background-color: ' + (isDarkMode ? '#1d6fa5' : '#3498db') + '; color: white; font-weight: bold;';
+                        cellStyle += `background-color: ${isDarkMode ? '#1d6fa5' : '#3498db'}; color: white; font-weight: bold;`;
                     } else if (isLit) {
                         cellStyle += 'background-color: #f1c40f; font-weight: bold; color: #333;';
                     } else if (isTerror) {
-                        cellStyle += 'background-color: ' + (isDarkMode ? 'rgba(52, 152, 219, 0.5)' : 'rgba(52, 152, 219, 0.3)') + ';';
+                        cellStyle += `background-color: ${isDarkMode ? 'rgba(52, 152, 219, 0.5)' : 'rgba(52, 152, 219, 0.3)'};`;
                     }
                     
                     // 计算技能值 - 直接从主界面获取
@@ -2408,7 +2531,10 @@
                         ${colIndex !== SKILLS.length-1 ? 
                             (() => {
                                 const isBlackened = state.blackenedColumns.has(colIndex * 2 + 1);
-                                const bgColor = isBlackened ? (isDarkMode ? '#3498db' : '#2c3e50') : (isDarkMode ? '#3d3d3d' : '#f5f5f5');
+                                // 修复：根据黑夜模式设置空白格颜色
+                                const bgColor = isBlackened ? 
+                                    (isDarkMode ? '#3498db' : '#2c3e50') : 
+                                    (isDarkMode ? '#3d3d3d' : '#f5f5f5');
                                 return `<td style="background-color: ${bgColor}; width: 16px;"></td>`;
                             })() 
                             : ''}
@@ -2418,13 +2544,13 @@
             }
             exportHTML += `</table>`;
             
-            // 6. 技能 - 优化显示效果和出处
+            // 6. 技能
             const customSkills = state.skills.filter(skill => skill.name || skill.type || skill.technique);
             if (customSkills.length > 0) {
-                exportHTML += `<div class="export-section-title ${darkModeClass}">技能</div>`;
+                exportHTML += `<div class="export-section-title">技能</div>`;
                 exportHTML += `<div class="export-skills-list">`;
                 customSkills.forEach(skill => {
-                    exportHTML += `<div class="export-skill-item ${darkModeClass}">
+                    exportHTML += `<div class="export-skill-item">
                         <div><strong>${skill.name}</strong> [${skill.type}] - ${skill.technique}</div>
                         ${skill.effect ? `<div style="font-size: 0.75rem; margin-top: 4px;">效果：${skill.effect}</div>` : ''}
                         ${skill.source ? `<div style="font-size: 0.7rem; color: ${isDarkMode ? '#aaa' : '#666'}; margin-top: 2px;">出处：${skill.source}</div>` : ''}
@@ -2441,26 +2567,26 @@
             const notes = document.getElementById('notesText').value.trim();
             
             if (mission || shock || secret || background || notes) {
-                exportHTML += `<div class="export-section-title ${darkModeClass}">PC文档</div>`;
+                exportHTML += `<div class="export-section-title">PC文档</div>`;
                 exportHTML += `<div class="export-pc-document">`;
                 
                 if (mission) {
-                    exportHTML += `<div class="export-pc-section ${darkModeClass}"><h4 class="${darkModeClass}">使命</h4><div>${mission}</div></div>`;
+                    exportHTML += `<div class="export-pc-section"><h4>使命</h4><div>${mission}</div></div>`;
                 }
                 
                 if (shock || secret) {
-                    exportHTML += `<div class="export-pc-section ${darkModeClass}"><h4 class="${darkModeClass}">秘密</h4>`;
+                    exportHTML += `<div class="export-pc-section"><h4>秘密</h4>`;
                     if (shock) exportHTML += `<div><strong>震惊：</strong>${shock}</div>`;
                     if (secret) exportHTML += `<div>${secret}</div>`;
                     exportHTML += `</div>`;
                 }
                 
                 if (background) {
-                    exportHTML += `<div class="export-pc-section ${darkModeClass}"><h4 class="${darkModeClass}">角色背景</h4><div>${marked.parse(background)}</div></div>`;
+                    exportHTML += `<div class="export-pc-section"><h4>角色背景</h4><div>${marked.parse(background)}</div></div>`;
                 }
                 
                 if (notes) {
-                    exportHTML += `<div class="export-pc-section ${darkModeClass}"><h4 class="${darkModeClass}">备注</h4><div>${notes}</div></div>`;
+                    exportHTML += `<div class="export-pc-section"><h4>备注</h4><div>${notes}</div></div>`;
                 }
                 
                 exportHTML += `</div>`;
@@ -2469,7 +2595,7 @@
             // 设置导出内容
             exportCard.innerHTML = exportHTML;
             
-            // 使用html2canvas生成图片 - 增加延迟确保内容渲染完成
+            // 使用html2canvas生成图片 - 修复导出问题
             setTimeout(() => {
                 html2canvas(exportCard, {
                     scale: 2,
@@ -2477,6 +2603,8 @@
                     allowTaint: false,
                     backgroundColor: isDarkMode ? '#2d2d2d' : '#ffffff',
                     logging: false,
+                    width: exportCard.scrollWidth,
+                    height: exportCard.scrollHeight,
                     onclone: function(clonedDoc) {
                         // 确保克隆的文档中表格样式正确
                         const clonedTable = clonedDoc.querySelector('.export-skill-table');
@@ -2502,7 +2630,7 @@
                     console.error('导出图片失败:', err);
                     alert('导出图片失败，请重试');
                 });
-            }, 1000);
+            }, 500);
         }
         
         // 下载图片
@@ -2572,6 +2700,22 @@
             
             // 修复黑夜模式事件监听
             document.getElementById('themeToggle').addEventListener('click', toggleDarkMode);
+            
+            // 新增：删除确认按钮事件监听
+            document.getElementById('confirmDeleteYes').addEventListener('click', function() {
+                if (state.pendingDeleteRowId) {
+                    removeSkillRow(state.pendingDeleteRowId);
+                }
+            });
+            
+            document.getElementById('confirmDeleteNo').addEventListener('click', hideDeleteConfirm);
+            
+            // 点击模态框背景关闭
+            document.getElementById('deleteConfirmModal').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    hideDeleteConfirm();
+                }
+            });
             
             // 点击页面其他位置关闭建议框
             document.addEventListener('click', function(e) {
